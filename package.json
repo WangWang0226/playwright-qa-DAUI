@@ -1,0 +1,29 @@
+{
+  "name": "damui-playwright-tests",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:smoke": "playwright test tests/smoke",
+    "test:functional": "playwright test tests/functional",
+    "test:workflow": "playwright test tests/workflows",
+    "test:mint": "DAMUI_RUN_MUTATING_TESTS=true playwright test tests/workflows/mint-transaction.workflow.spec.ts --no-deps",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug",
+    "auth:admin": "playwright test tests/setup/admin-auth.setup.spec.ts",
+    "auth:all": "playwright test tests/setup",
+    "report": "playwright show-report reports/html",
+    "inspect:login": "tsx scripts/inspect-login.ts",
+    "inspect:page": "tsx scripts/inspect-page.ts",
+    "inspect:storage": "tsx scripts/inspect-storage.ts",
+    "inspect:history": "tsx scripts/inspect-history.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "dotenv": "^17.2.3",
+    "tsx": "^4.21.0",
+    "typescript": "~5.8.2"
+  }
+}
