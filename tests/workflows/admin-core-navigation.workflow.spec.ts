@@ -2,7 +2,7 @@ import { test, expect } from '../../fixtures/roles.fixture';
 import { ApprovalQueuePage } from '../../pages/ApprovalQueuePage';
 import { TransactionPage } from '../../pages/TransactionPage';
 
-test('admin can move through core DAMUI workflow pages', async ({ adminPage }) => {
+test('TC-UI-OPS-TXN-001 admin can move through core OpsUI workflow pages', async ({ adminPage }) => {
   const transactions = new TransactionPage(adminPage);
   const approvalQueue = new ApprovalQueuePage(adminPage);
 

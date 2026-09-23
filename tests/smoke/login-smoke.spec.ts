@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { LoginPage } from '../../pages/LoginPage';
 
-test('login page loads from live environment', async ({ page }) => {
+test('TC-UI-OPS-AUTH-001 login page loads from live environment', async ({ page }) => {
   const loginPage = new LoginPage(page);
 
   await loginPage.goto();

@@ -3,8 +3,8 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const baseURL = process.env.DAMUI_BASE_URL || 'https://daui.34.36.111.7.nip.io';
-const browser = await chromium.launch({ headless: process.env.DAMUI_HEADLESS !== 'false' });
+const baseURL = process.env.OPSUI_BASE_URL || 'https://daui.34.36.111.7.nip.io';
+const browser = await chromium.launch({ headless: process.env.OPSUI_HEADLESS !== 'false' });
 const context = await browser.newContext({ storageState: 'auth/admin.storageState.json' });
 const page = await context.newPage();
 

@@ -1,5 +1,5 @@
-export function requiredEnv(name: string, fallback?: string): string {
-  const value = process.env[name] || fallback;
+export function requiredEnv(name: string): string {
+  const value = process.env[name];
   if (!value) {
     throw new Error(`Missing required environment variable: ${name}`);
   }
@@ -8,9 +8,9 @@ export function requiredEnv(name: string, fallback?: string): string {
 
 export const credentials = {
   admin: {
-    username: requiredEnv('DAMUI_ADMIN_USERNAME', 'ops.admin'),
-    password: requiredEnv('DAMUI_ADMIN_PASSWORD', 'password'),
-    allowSimulationFallback: process.env.DAMUI_ALLOW_SIMULATION_FALLBACK === 'true',
-    fallbackQuickSelect: process.env.DAMUI_ADMIN_FALLBACK_QUICK_SELECT || 'MOCK - Test User'
+    username: requiredEnv('OPSUI_ADMIN_USERNAME'),
+    password: requiredEnv('OPSUI_ADMIN_PASSWORD'),
+    allowSimulationFallback: process.env.OPSUI_ALLOW_SIMULATION_FALLBACK === 'true',
+    fallbackQuickSelect: process.env.OPSUI_ADMIN_FALLBACK_QUICK_SELECT || ''
   }
 };

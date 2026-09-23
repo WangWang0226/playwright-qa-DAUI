@@ -2,7 +2,9 @@ import { expect, type Page } from '@playwright/test';
 
 export type MintTransactionInput = {
   sourceAccount: string;
+  sourceVault?: string;
   destinationAccount: string;
+  destinationVault?: string;
   expectedSource?: string;
   expectedDestination?: string;
   expectedHistorySource?: string;
@@ -25,11 +27,13 @@ export class MintWorkflowPage {
   }
 
   async createApproveAndVerify(input: MintTransactionInput) {
+    this.transactionId = undefined;
+    this.completedHistoryId = undefined;
     await this.captureExistingHistoryIds();
     await this.gotoNewTransaction();
     await this.selectNetwork(input.network);
-    await this.selectSourceAccount(input.sourceAccount);
-    await this.selectDestinationAccount(input.destinationAccount);
+    await this.selectSourceAccount(input.sourceAccount, input.sourceVault);
+    await this.selectDestinationAccount(input.destinationAccount, input.destinationVault);
     await this.fillAmount(input.amount);
     await this.fillMemo(input.memo);
     await this.submitTransaction();
@@ -50,14 +54,16 @@ export class MintWorkflowPage {
     await this.page.getByRole('button', { name: new RegExp(`^${escapeRegExp(network)}$`, 'i') }).last().click();
   }
 
-  async selectSourceAccount(accountName: string) {
+  async selectSourceAccount(accountName: string, secondaryText?: string) {
     await this.page.getByRole('button', { name: 'Select account...' }).first().click();
-    await this.page.getByRole('button', { name: new RegExp(escapeRegExp(accountName), 'i') }).click();
+    await this.accountOption(accountName, secondaryText).click();
+    await this.page.mouse.click(260, 92);
   }
 
-  async selectDestinationAccount(accountName: string) {
-    await this.page.getByRole('button', { name: 'Select account...' }).click();
-    await this.page.getByRole('button', { name: new RegExp(escapeRegExp(accountName), 'i') }).click();
+  async selectDestinationAccount(accountName: string, secondaryText?: string) {
+    await this.page.getByRole('button', { name: 'Select account...' }).last().click();
+    await this.accountOption(accountName, secondaryText).click();
+    await this.page.mouse.click(260, 92);
   }
 
   async fillAmount(amount: string) {
@@ -77,7 +83,11 @@ export class MintWorkflowPage {
 
   async verifyTransactionReview(input: MintTransactionInput) {
     const row = await this.pendingTransactionRow(input);
-    this.transactionId = await row.locator('td, th').first().innerText().then(text => text.match(/TX\d+/)?.[0]);
+    this.transactionId = await row
+      .locator('td, th')
+      .first()
+      .innerText()
+      .then(text => extractTransactionId(text));
 
     await expect(row).toContainText(input.expectedSource || input.sourceAccount);
     await expect(row).toContainText(input.expectedDestination || input.destinationAccount);
@@ -102,30 +112,37 @@ export class MintWorkflowPage {
   }
 
   async waitForTransactionCompletedInHistory(input: MintTransactionInput) {
-    const timeout = input.completionTimeoutMs || Number(process.env.DAMUI_MINT_COMPLETION_TIMEOUT_MS || 180000);
+    const timeout = input.completionTimeoutMs || Number(process.env.OPSUI_MINT_COMPLETION_TIMEOUT_MS || 180000);
+    const startedAt = Date.now();
+    const intervals = [3000, 5000, 10000];
+    let attempts = 0;
+    let lastObservedRow = '';
 
-    await expect
-      .poll(
-        async () => {
-          await this.page.goto('/transactions/history');
-          await this.page.waitForLoadState('domcontentloaded');
+    while (Date.now() - startedAt < timeout) {
+      await this.page.goto('/transactions/history');
+      await this.page.waitForLoadState('domcontentloaded');
 
-          const rowText = await this.completedHistoryRowText(input);
-          return (
-            rowText.includes(input.expectedHistorySource || input.expectedSource || input.sourceAccount) &&
-            rowText.includes(input.expectedHistoryDestination || input.expectedDestination || input.destinationAccount) &&
-            rowText.toLowerCase().includes(input.network.toLowerCase()) &&
-            amountPattern(input.amount).test(rowText) &&
-            completedPattern().test(rowText)
-          );
-        },
-        {
-          timeout,
-          intervals: [3000, 5000, 10000],
-          message: `Wait for approved mint transaction to be completed in History within ${timeout}ms`
+      const rowText = await this.matchingNewHistoryRowText(input);
+      if (rowText) {
+        lastObservedRow = rowText;
+
+        if (failedPattern().test(rowText)) {
+          throw new Error(`Transaction reached a failed terminal state in History: ${rowText}`);
         }
-      )
-      .toBe(true);
+
+        if (completedPattern().test(rowText)) {
+          return;
+        }
+      }
+
+      await this.page.waitForTimeout(intervals[Math.min(attempts, intervals.length - 1)]);
+      attempts += 1;
+    }
+
+    throw new Error(
+      `Timed out after ${timeout}ms waiting for transaction to complete in History.` +
+        (lastObservedRow ? ` Last observed matching row: ${lastObservedRow}` : ' No new matching History row was observed.')
+    );
   }
 
   async verifyHistory(input: MintTransactionInput) {
@@ -179,20 +196,21 @@ export class MintWorkflowPage {
       .first();
   }
 
-  private async completedHistoryRowText(input: MintTransactionInput) {
-    const rows = this.page
+  private async matchingNewHistoryRowText(input: MintTransactionInput) {
+    let rows = this.page
       .getByRole('row')
       .filter({ hasText: input.network })
-      .filter({ hasText: input.expectedHistorySource || input.expectedSource || input.sourceAccount })
-      .filter({ hasText: input.expectedHistoryDestination || input.expectedDestination || input.destinationAccount })
-      .filter({ hasText: completedPattern() })
       .filter({ hasText: amountPattern(input.amount) });
+
+    if (this.transactionId && isUuid(this.transactionId)) {
+      rows = rows.filter({ hasText: this.transactionId });
+    }
 
     const count = await rows.count();
     for (let index = 0; index < count; index += 1) {
       const row = rows.nth(index);
       const text = await row.innerText();
-      const id = extractHistoryId(text);
+      const id = extractTransactionId(text);
       if (id && !this.existingHistoryIds.has(id)) {
         this.completedHistoryId = id;
         return text;
@@ -210,7 +228,20 @@ export class MintWorkflowPage {
       rows.map(row => (row as HTMLElement).innerText)
     );
 
-    this.existingHistoryIds = new Set(rowTexts.map(extractHistoryId).filter((id): id is string => Boolean(id)));
+    this.existingHistoryIds = new Set(rowTexts.map(extractTransactionId).filter((id): id is string => Boolean(id)));
+  }
+
+  private accountOption(accountName: string, secondaryText?: string) {
+    let option = this.page
+      .locator('button')
+      .filter({ hasText: new RegExp(`^\\s*${escapeRegExp(accountName)}`, 'i') })
+      .filter({ hasNotText: /select account|clear selection|source account|destination account/i });
+
+    if (secondaryText) {
+      option = option.filter({ hasText: new RegExp(escapeRegExp(secondaryText), 'i') });
+    }
+
+    return option.first();
   }
 }
 
@@ -231,8 +262,20 @@ function completedPattern() {
   return /completed|complete|confirmed|success|settled/i;
 }
 
+function failedPattern() {
+  return /failed|failure|rejected|error|cancelled|canceled/i;
+}
+
 function extractHistoryId(text: string) {
   return text.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)?.[0];
+}
+
+function extractTransactionId(text: string) {
+  return extractHistoryId(text) || text.match(/TX\d+/i)?.[0];
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }
 
 function escapeRegExp(value: string) {

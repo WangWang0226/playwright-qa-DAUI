@@ -1,5 +1,5 @@
 {
-  "name": "damui-playwright-tests",
+  "name": "digital-asset-playwright-qa",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -7,8 +7,17 @@
     "test": "playwright test",
     "test:smoke": "playwright test tests/smoke",
     "test:functional": "playwright test tests/functional",
+    "test:api": "playwright test tests/api --no-deps",
+    "test:api:smoke": "playwright test tests/api/smoke --no-deps",
+    "test:api:functional": "playwright test tests/api/functional --no-deps",
+    "test:api:workflow": "playwright test tests/api/workflows --no-deps",
+    "test:api:mint": "OPSUI_RUN_API_MUTATION_TESTS=true playwright test tests/api/workflows/mint.workflow.api.spec.ts --no-deps",
     "test:workflow": "playwright test tests/workflows",
-    "test:mint": "DAMUI_RUN_MUTATING_TESTS=true playwright test tests/workflows/mint-transaction.workflow.spec.ts --no-deps",
+    "test:mint": "OPSUI_RUN_MUTATING_TESTS=true playwright test tests/workflows/mint-transaction.workflow.spec.ts --no-deps",
+    "test:transfer": "OPSUI_RUN_MUTATING_TESTS=true playwright test tests/workflows/transfer.workflow.spec.ts --no-deps",
+    "test:burn": "OPSUI_RUN_MUTATING_TESTS=true playwright test tests/workflows/burn.workflow.spec.ts --no-deps",
+    "test:mint-transfer-burn": "OPSUI_RUN_MUTATING_TESTS=true playwright test tests/workflows/mint-transfer-burn.workflow.spec.ts --no-deps",
+    "test:lifecycle": "OPSUI_RUN_MUTATING_TESTS=true playwright test tests/workflows/mint-transaction.workflow.spec.ts tests/workflows/transfer.workflow.spec.ts tests/workflows/burn.workflow.spec.ts tests/workflows/mint-transfer-burn.workflow.spec.ts --no-deps",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
     "test:debug": "playwright test --debug",
@@ -18,7 +27,9 @@
     "inspect:login": "tsx scripts/inspect-login.ts",
     "inspect:page": "tsx scripts/inspect-page.ts",
     "inspect:storage": "tsx scripts/inspect-storage.ts",
-    "inspect:history": "tsx scripts/inspect-history.ts"
+    "inspect:history": "tsx scripts/inspect-history.ts",
+    "confluence:test": "tsx scripts/test-confluence-update.ts",
+    "confluence:report": "tsx scripts/generate-confluence-report.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

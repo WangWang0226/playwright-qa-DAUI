@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const baseURL = process.env.DAMUI_BASE_URL || 'https://daui.34.36.111.7.nip.io';
+const baseURL = process.env.OPSUI_BASE_URL || 'https://daui.34.36.111.7.nip.io';
 const path = process.argv[2] || '/dashboard';
 const storageState = process.argv.includes('--no-auth') ? undefined : 'auth/admin.storageState.json';
 const targetUrl = path.startsWith('http') ? path : `${baseURL.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;

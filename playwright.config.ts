@@ -3,9 +3,9 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const baseURL = process.env.DAMUI_BASE_URL || 'https://daui.34.36.111.7.nip.io';
-const headless = process.env.DAMUI_HEADLESS !== 'false';
-const slowMo = Number(process.env.DAMUI_SLOW_MO_MS || 0);
+const baseURL = process.env.OPSUI_BASE_URL || 'https://daui.34.36.111.7.nip.io';
+const headless = process.env.OPSUI_HEADLESS !== 'false';
+const slowMo = Number(process.env.OPSUI_SLOW_MO_MS || 0);
 
 export default defineConfig({
   testDir: './tests',
